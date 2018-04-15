@@ -2,5 +2,5 @@
 #define PICOELFLDR_H
 #include <stdint.h>
 
-void load_elf(char *file_name, uint32_t *mem_region);
+uint32_t load_elf(char *file_name, uint32_t *mem_region);
 #endif //PICOELFLDR_H

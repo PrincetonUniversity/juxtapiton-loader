@@ -6,12 +6,12 @@
 #include "pico_elf_ldr.h"
 
 // this is specifically for 32 bit ELF
-void load_elf(char *file_name, uint32_t *mem_region) {
+uint32_t load_elf(char *file_name, uint32_t *mem_region) {
     FILE *exe_file;
     int return_val, i, byte_count;
     Elf32_Ehdr *the_ehdr;
     Elf32_Shdr *current_shdr;
-    uint32_t offset;
+    uint32_t offset, start_addr;
     uint16_t num_shdrs;
 
     uint32_t where_to_load, length_to_load;
@@ -21,7 +21,7 @@ void load_elf(char *file_name, uint32_t *mem_region) {
     exe_file = fopen(file_name, "r");
     if (exe_file == NULL) {
         printf("fopen error\n");
-        return;
+        return 0xffffffff;
     }
     
     // read in the ELF header
@@ -29,7 +29,7 @@ void load_elf(char *file_name, uint32_t *mem_region) {
     return_val = fread(the_ehdr, sizeof(Elf32_Ehdr), 1, exe_file);
     if (return_val != 1) {
         printf("Error reading ELF header\n");
-        return;
+        return 0xffffffff;
     }
 
     // read in the first section header
@@ -78,4 +78,5 @@ void load_elf(char *file_name, uint32_t *mem_region) {
     }
 
     fclose(exe_file);    
+    return le32toh(the_ehdr->e_entry);
 }
