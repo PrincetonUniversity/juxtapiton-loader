@@ -3,6 +3,7 @@
 #include <endian.h>
 #include <errno.h>
 #include <fcntl.h>
+#include <unistd.h>
 
 #include "proxy_syscalls.h"
 
@@ -69,35 +70,45 @@ out:
 static uint32_t handle_syscall(uint32_t *base_mem_region, uint32_t syscall_num, 
     uint32_t syscall_arg0, uint32_t syscall_arg1, uint32_t syscall_arg2, 
     uint32_t syscall_arg3) {
-    unsigned char *string_pointer;
+    unsigned char *buf_pointer;
     int return_val;
-    printf("Got syscall number %x\n", syscall_num);
+    printf("Got syscall number %d\n", syscall_num);
     switch(syscall_num) {
         case SYS_riscv_open:
-            string_pointer = convert_pointer(base_mem_region, syscall_arg0);
-            for (int i = 0; i < 9; i++) {
-                printf("%c", string_pointer[i]);
+            buf_pointer = convert_pointer(base_mem_region, syscall_arg0);
+            printf("File name: %s\n", buf_pointer);
+            printf("Arg1: %d, expected: %d\n", syscall_arg1, O_RDWR | O_CREAT);
+            return_val = open(buf_pointer, syscall_arg1, syscall_arg2);
+            if (return_val == -1) {
+                perror("Error");
             }
-            printf("\n");
-            //return_val = open(string_pointer, syscall_arg1, syscall_arg2);
+            else {
+                printf("Got FD: %d\n", return_val);
+            }
+            return return_val;
+        break;
+        case SYS_riscv_write:
+            printf("Buffer pointer: %x\n", syscall_arg1);
+            buf_pointer = convert_pointer(base_mem_region, syscall_arg1);
+            printf("Got FD: %d\n", syscall_arg0);
+            return_val = write(syscall_arg0, buf_pointer, syscall_arg2);
             if (return_val == -1) {
                 perror("Error");
             }
             return return_val;
         break;
-        
-        
     }
 
 }
 
 static unsigned char * convert_pointer(uint32_t * base_mem_region, 
     uint32_t pointer_val) {
-    unsigned long base_mask = ~((unsigned long)(0xffff));
-    unsigned long base = (((unsigned long)(base_mem_region)) & base_mask);
-    uint32_t offset = pointer_val & (uint32_t)(0xffff);
+    //unsigned long base_mask = ~((unsigned long)(0x7fffff));
+    unsigned long base = (unsigned long)(base_mem_region);
+    uint32_t offset = pointer_val & (uint32_t)(0x7fffff);
 
-    unsigned char *converted_pointer = (unsigned char *)(base | ((unsigned long)(offset)));
+    unsigned char *converted_pointer = (unsigned char *)(base + ((unsigned long)(offset)));
+    printf("Given pointer 0x%08x\n", pointer_val);
     printf("Base: 0x%016lx\n", base);
     printf("Offset: 0x%08x\n", offset);
     printf("New pointer: %p\n", converted_pointer);
