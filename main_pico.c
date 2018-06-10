@@ -14,21 +14,28 @@
 #include "proxy_syscalls.h"
 
 #define PG_SIZE ((unsigned long)(1 << 12))
-#define CACHED_OFFSET 0x110C
-#define UNCACHED_OFFSET 0x1114
-#define PICO_MEM_DONE 0x111C
+#define CACHED_OFFSET 0x4
 
+void check_quicksort(uint32_t *mem_region) {
+    unsigned long data_offset = 0x241c;
+    unsigned long ref_offset = 0x25ac;
+
+    uint32_t *data_p = (uint32_t *)(((unsigned long)mem_region) + data_offset);
+    uint32_t *ref_p = (uint32_t *)(((unsigned long)mem_region) + ref_offset);
+
+    printf("First ref element: %d\n", le32toh(*ref_p));
+    printf("First data element: %d\n", le32toh(*data_p));
+}
 
 void memory_test(uint32_t *mem_region) {
     unsigned char *done;
     uint32_t *measure_addr;
     uint32_t measurement;
-    done = (unsigned char *)(((unsigned long)mem_region) + PICO_MEM_DONE);
+    done = (unsigned char *)(((unsigned long)mem_region));
     printf("Reading addr %p for status\n", done);
     while (*done != 0xff) {
 
     }
-
     measure_addr = (uint32_t *)(((unsigned long)mem_region) + CACHED_OFFSET);
 
     measurement = *measure_addr;
@@ -44,21 +51,35 @@ void memory_test(uint32_t *mem_region) {
     printf("After uncache read: %08x\n", le32toh(measurement));
 }
 
-void simple_test(uint32_t *mem_region) {
-   unsigned char* done = (unsigned char *)(mem_region);
-   uint32_t result;
-   uint32_t le_result;
-   printf("Reading address %p for status\n", done);
-   while (*done != 0xff) {
+void read_results(uint32_t *mem_region) {
+    volatile uint32_t *start = (uint32_t *)(((unsigned long)mem_region) + 32);
+    volatile uint32_t *end = (uint32_t *)(((unsigned long)mem_region) + 40);
+    uint32_t start_cycles = le32toh(*start);
+    uint32_t start_cycles_hi = le32toh(*(start + 1));
+    uint32_t end_cycles = le32toh(*end);
+    uint32_t end_cycles_hi = le32toh(*(end + 1));
+    uint32_t test_passed = le32toh(*(end + 2));
+    uint32_t start_inst = le32toh(*(end + 3));
+    uint32_t start_inst_hi = le32toh(*(end + 4));
+    uint32_t end_inst = le32toh(*(end + 5));
+    uint32_t end_inst_hi = le32toh(*(end + 6));
 
-   }
-   printf("Found done\n");
-   result = *((uint32_t *)(done + 4));
-   le_result = le32toh(result);
+    printf("Start cycles: 0x%x\n", start_cycles);
+    printf("Start cycles high: 0x%x\n", start_cycles_hi);
+    printf("End cycles: 0x%x\n", end_cycles);
+    printf("End cycles high: 0x%x\n", end_cycles_hi);
 
-   printf("Got result %d\n", le_result);
+    printf("Start inst: 0x%x\n", start_inst);
+    printf("Start inst high: 0x%x\n", start_inst_hi);
+    printf("End inst: 0x%x\n", end_inst);
+    printf("End inst high: 0x%x\n", end_inst_hi);
 
-
+    if (test_passed == 1) {
+        printf("Test passed\n");
+    }
+    else {
+        printf("Test failed\n");
+    }
 }
 
 int main(int argc, char *argv[]) {
@@ -120,7 +141,10 @@ int main(int argc, char *argv[]) {
     printf("Starting pico from address %x\n", start_pc);
     //printf("Reading back first instruction from %p: %x\n", mmapped, *((unsigned long)mmapped + start_pc));
     syscall(360, start_pc);
+    //memory_test(mmapped);
     service_syscalls(mmapped);
+    read_results(mmapped);
+    //check_quicksort(mmapped);
     printf("Exiting\n");
     
     return 0;

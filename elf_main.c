@@ -4,14 +4,16 @@
 
 int main(int argc, char *argv[]) {
     uint32_t *dummy_mem_region;
+    uint32_t start_pc;
     FILE *mem_image;
     if (argc != 2) {
         printf("Please enter 1 filename\n");
         return 0;
     }
 
-    dummy_mem_region = malloc(4096);
-    load_elf(argv[1], dummy_mem_region);
+    dummy_mem_region = malloc(4*4096);
+    start_pc = load_elf(argv[1], dummy_mem_region);
+    printf("Start at %x\n", start_pc);
 
     // DEBUG: spit out the 1st 0x100 bytes just to check what is loaded into memory
     mem_image = fopen("mem_image", "w");

@@ -1,6 +1,8 @@
 #ifndef PROXY_SYSCALLS_H
 #define PROXY_SYSCALLS_H
 
+// riscv-newlib syscall numbers
+// these are different than SPARC syscall numbers
 #define SYS_riscv_exit 93
 #define SYS_riscv_exit_group 94
 #define SYS_riscv_getpid 172
@@ -43,6 +45,8 @@
 #define SYS_riscv_getdents 61
 #define SYS_riscv_dup 23
 
+
+// offsets in memory for getting certain values for Pico
 #define SYSCALL_STAT 0x0
 #define SYSCALL_NUM  0x4
 #define SYSCALL_ARG0 0x8
