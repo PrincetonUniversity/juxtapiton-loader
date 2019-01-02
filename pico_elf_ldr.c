@@ -16,11 +16,11 @@ uint32_t load_elf(char *file_name, uint32_t *mem_region) {
 
     uint32_t where_to_load, length_to_load;
 
-    printf("Loading file: %s\n", file_name);
+    fprintf(stderr, "Loading file: %s\n", file_name);
 
     exe_file = fopen(file_name, "r");
     if (exe_file == NULL) {
-        printf("fopen error\n");
+        fprintf(stderr, "fopen error\n");
         return 0xffffffff;
     }
     
@@ -28,15 +28,15 @@ uint32_t load_elf(char *file_name, uint32_t *mem_region) {
     the_ehdr = malloc(sizeof(Elf32_Ehdr));
     return_val = fread(the_ehdr, sizeof(Elf32_Ehdr), 1, exe_file);
     if (return_val != 1) {
-        printf("Error reading ELF header\n");
+        fprintf(stderr, "Error reading ELF header\n");
         return 0xffffffff;
     }
 
     // read in the first section header
     current_shdr = malloc(sizeof(Elf32_Shdr));
-    printf("section header offset: %d\n", le32toh(the_ehdr->e_shoff));
+    fprintf(stderr, "section header offset: %d\n", le32toh(the_ehdr->e_shoff));
     num_shdrs = le16toh(the_ehdr->e_shnum);
-    printf("number of section headers: %d\n", num_shdrs);
+    fprintf(stderr, "number of section headers: %d\n", num_shdrs);
     
     offset = le32toh(the_ehdr->e_shoff);
     fseek(exe_file, offset, SEEK_SET);
@@ -47,7 +47,7 @@ uint32_t load_elf(char *file_name, uint32_t *mem_region) {
         length_to_load = le32toh(current_shdr->sh_size);
         // if this is a BSS-like section, allocate and 0 out
         if ((le32toh(current_shdr->sh_type) == SHT_NOBITS) && (le32toh(current_shdr->sh_flags) & SHF_ALLOC)) {
-            printf("This section is BSS-like. It should be loaded at %08x and has size %x\n", where_to_load, length_to_load);
+            fprintf(stderr, "This section is BSS-like. It should be loaded at %08x and has size %x\n", where_to_load, length_to_load);
        
             for (byte_count = 0; byte_count < length_to_load; byte_count++) {
                 *((unsigned char *)(mem_region) + where_to_load) = 0;
@@ -55,12 +55,12 @@ uint32_t load_elf(char *file_name, uint32_t *mem_region) {
         }
 
         else {
-            printf("Found a section of size %x. ", length_to_load);
+            fprintf(stderr, "Found a section of size %x. ", length_to_load);
             if ((le32toh(current_shdr->sh_type) == SHT_PROGBITS) && (le32toh(current_shdr->sh_flags) & SHF_ALLOC)) {
                 unsigned char* mem_address = ((unsigned char *)(mem_region)) + where_to_load;
                 uint32_t sec_data_offset = le32toh(current_shdr->sh_offset);
                 long curr_offset;
-                printf("It should be loaded at %08x", where_to_load);
+                fprintf(stderr, "It should be loaded at %08x", where_to_load);
                 // save the current offset
                 curr_offset = ftell(exe_file);
 

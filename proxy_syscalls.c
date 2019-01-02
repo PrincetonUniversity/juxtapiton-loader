@@ -37,7 +37,7 @@ void service_syscalls(uint32_t * mem_region) {
         while(syscall_status != 0xdeadbeef) {
             syscall_status = le32toh(*volatile_mem_region);
             if (syscall_status == 0xffffffff) {
-                printf("Got end status\n");
+                fprintf(stderr, "Got end status\n");
                 goto out;
             }
         }
@@ -64,7 +64,7 @@ void service_syscalls(uint32_t * mem_region) {
         // TODO: if return val was a pointer, need to convert address
         // TODO: what if return val is a 64-bit value?
         *((uint32_t *)(mem_region_byte + SYSCALL_NUM)) = pico_return_val;
-        printf("Returning to pico\n");
+        fprintf(stderr, "Returning to pico\n");
         // clear status to tell Pico we're done
         *volatile_mem_region = 0x0;
     }
@@ -84,10 +84,10 @@ static uint32_t handle_syscall(uint32_t *base_mem_region, uint32_t syscall_num,
     int return_val;
     unsigned long max_mem_brk = ((unsigned long)(base_mem_region)) + 0x300000;
 
-    printf("Got syscall number %d\n", syscall_num);
+    fprintf(stderr, "Got syscall number %d\n", syscall_num);
     switch(syscall_num) {
         case SYS_riscv_open:
-            printf("Calling open\n");
+            fprintf(stderr, "Calling open\n");
             buf_pointer = convert_pointer(base_mem_region, syscall_arg0);
             printf("File name: %s\n", buf_pointer);
             return_val = open(buf_pointer, syscall_arg1, syscall_arg2);
@@ -95,14 +95,14 @@ static uint32_t handle_syscall(uint32_t *base_mem_region, uint32_t syscall_num,
                 perror("Error");
             }
             else {
-                printf("Got FD: %d\n", return_val);
+                fprintf(stderr, "Got FD: %d\n", return_val);
             }
             return return_val;
         break;
         case SYS_riscv_openat:
-            printf("Calling openat\n");
+            fprintf(stderr, "Calling openat\n");
             buf_pointer = convert_pointer(base_mem_region, syscall_arg1);
-            printf("Path: %s\n", buf_pointer);
+            fprintf(stderr, "Path: %s\n", buf_pointer);
             return_val = openat(syscall_arg0, buf_pointer, 
                                 syscall_arg2, syscall_arg3);
             if (return_val == -1) {
@@ -111,7 +111,7 @@ static uint32_t handle_syscall(uint32_t *base_mem_region, uint32_t syscall_num,
             return return_val;
         break;
         case SYS_riscv_lseek:
-            printf("Calling lseek\n");
+            fprintf(stderr, "Calling lseek\n");
             return_val = lseek(syscall_arg0, syscall_arg1, syscall_arg2);
             if (return_val == -1) {
                 perror("Error");
@@ -119,7 +119,7 @@ static uint32_t handle_syscall(uint32_t *base_mem_region, uint32_t syscall_num,
             return return_val;
         break;
         case SYS_riscv_read:
-            printf("Calling read\n");
+            fprintf(stderr, "Calling read\n");
             buf_pointer = convert_pointer(base_mem_region, syscall_arg1);
             return_val = read(syscall_arg0, buf_pointer, syscall_arg2);
             if (return_val == -1) {
@@ -128,10 +128,10 @@ static uint32_t handle_syscall(uint32_t *base_mem_region, uint32_t syscall_num,
             return return_val;
         break;
         case SYS_riscv_write:
-            printf("Calling write\n");
-            printf("Buffer pointer: %x\n", syscall_arg1);
+            fprintf(stderr, "Calling write\n");
+            fprintf(stderr, "Buffer pointer: %x\n", syscall_arg1);
             buf_pointer = convert_pointer(base_mem_region, syscall_arg1);
-            printf("Got FD: %d\n", syscall_arg0);
+            fprintf(stderr, "Got FD: %d\n", syscall_arg0);
             return_val = write(syscall_arg0, buf_pointer, syscall_arg2);
             if (return_val == -1) {
                 perror("Error");
@@ -140,7 +140,7 @@ static uint32_t handle_syscall(uint32_t *base_mem_region, uint32_t syscall_num,
         break;
         // TODO: fstat isn't done
         case SYS_riscv_fstat:   
-            printf("Calling fstat\n");
+            fprintf(stderr, "Calling fstat\n");
             dest_stat = (struct stat *)convert_pointer(base_mem_region, syscall_arg1);
             return_val = fstat(syscall_arg0, &buf_stat);
             if (return_val == -1) {
@@ -150,7 +150,7 @@ static uint32_t handle_syscall(uint32_t *base_mem_region, uint32_t syscall_num,
             return return_val;
         break;
         case SYS_riscv_stat:
-            printf("Calling stat\n");
+            fprintf(stderr, "Calling stat\n");
             buf_pointer = convert_pointer(base_mem_region, syscall_arg0);
             dest_stat = (struct stat *)convert_pointer(base_mem_region, syscall_arg1);
 
@@ -162,7 +162,7 @@ static uint32_t handle_syscall(uint32_t *base_mem_region, uint32_t syscall_num,
             return return_val;
         break;
         case SYS_riscv_lstat:
-            printf("Calling lstat\n");
+            fprintf(stderr, "Calling lstat\n");
             buf_pointer = convert_pointer(base_mem_region, syscall_arg0);
             dest_stat = (struct stat *)convert_pointer(base_mem_region, syscall_arg1);
 
@@ -174,7 +174,7 @@ static uint32_t handle_syscall(uint32_t *base_mem_region, uint32_t syscall_num,
             return return_val;
         break;
         case SYS_riscv_fstatat:
-            printf("Calling fstatat\n");
+            fprintf(stderr, "Calling fstatat\n");
             buf_pointer = convert_pointer(base_mem_region, syscall_arg1);
             dest_stat = (struct stat *)convert_pointer(base_mem_region, syscall_arg2);
 
@@ -186,7 +186,7 @@ static uint32_t handle_syscall(uint32_t *base_mem_region, uint32_t syscall_num,
             return return_val;
         break;
         case SYS_riscv_access:
-            printf("Calling access\n");
+            fprintf(stderr, "Calling access\n");
             buf_pointer = convert_pointer(base_mem_region, syscall_arg0);
             
             return_val = access(buf_pointer, syscall_arg1);
@@ -196,7 +196,7 @@ static uint32_t handle_syscall(uint32_t *base_mem_region, uint32_t syscall_num,
             return return_val;
         break;
         case SYS_riscv_faccessat:
-            printf("Calling faccessat\n");
+            fprintf(stderr, "Calling faccessat\n");
             buf_pointer = convert_pointer(base_mem_region, syscall_arg1);
 
             return_val = faccessat(syscall_arg0, buf_pointer, 
@@ -207,7 +207,7 @@ static uint32_t handle_syscall(uint32_t *base_mem_region, uint32_t syscall_num,
             return return_val;
         break;
         case SYS_riscv_close:
-            printf("Calling close\n");
+            fprintf(stderr, "Calling close\n");
             return_val = close(syscall_arg0);
             if (return_val == -1) {
                 perror("Error");
@@ -215,7 +215,7 @@ static uint32_t handle_syscall(uint32_t *base_mem_region, uint32_t syscall_num,
             return return_val;
         break;
         case SYS_riscv_link:
-            printf("Calling link\n");
+            fprintf(stderr, "Calling link\n");
             buf_pointer = convert_pointer(base_mem_region, syscall_arg0);
             new_buf_pointer = convert_pointer(base_mem_region, syscall_arg1);
 
@@ -226,7 +226,7 @@ static uint32_t handle_syscall(uint32_t *base_mem_region, uint32_t syscall_num,
             return return_val;
         break;
         case SYS_riscv_unlink:
-            printf("Calling unlink\n");
+            fprintf(stderr, "Calling unlink\n");
             buf_pointer = convert_pointer(base_mem_region, syscall_arg0);
 
             return_val = unlink(buf_pointer);
@@ -236,7 +236,7 @@ static uint32_t handle_syscall(uint32_t *base_mem_region, uint32_t syscall_num,
             return return_val;
         break;
         case SYS_riscv_gettimeofday:
-            printf("Calling gettimeofday\n");
+            fprintf(stderr, "Calling gettimeofday\n");
             dest_time = (struct timeval *)convert_pointer(base_mem_region, 
                                                           syscall_arg0);
             return_val = gettimeofday(&buf_time, NULL);
@@ -271,10 +271,10 @@ static unsigned char * convert_pointer(uint32_t * base_mem_region,
     uint32_t offset = pointer_val & (uint32_t)(0x7fffff);
 
     unsigned char *converted_pointer = (unsigned char *)(base + ((unsigned long)(offset)));
-    printf("Given pointer 0x%08x\n", pointer_val);
-    printf("Base: 0x%016lx\n", base);
-    printf("Offset: 0x%08x\n", offset);
-    printf("New pointer: %p\n", converted_pointer);
+    fprintf(stderr, "Given pointer 0x%08x\n", pointer_val);
+    fprintf(stderr, "Base: 0x%016lx\n", base);
+    fprintf(stderr, "Offset: 0x%08x\n", offset);
+    fprintf(stderr, "New pointer: %p\n", converted_pointer);
 
 
     return converted_pointer;

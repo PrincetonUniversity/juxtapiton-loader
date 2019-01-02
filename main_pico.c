@@ -23,8 +23,8 @@ void check_quicksort(uint32_t *mem_region) {
     uint32_t *data_p = (uint32_t *)(((unsigned long)mem_region) + data_offset);
     uint32_t *ref_p = (uint32_t *)(((unsigned long)mem_region) + ref_offset);
 
-    printf("First ref element: %d\n", le32toh(*ref_p));
-    printf("First data element: %d\n", le32toh(*data_p));
+    fprintf(stderr, "First ref element: %d\n", le32toh(*ref_p));
+    fprintf(stderr, "First data element: %d\n", le32toh(*data_p));
 }
 
 void memory_test(uint32_t *mem_region) {
@@ -32,23 +32,23 @@ void memory_test(uint32_t *mem_region) {
     uint32_t *measure_addr;
     uint32_t measurement;
     done = (unsigned char *)(((unsigned long)mem_region));
-    printf("Reading addr %p for status\n", done);
+    fprintf(stderr, "Reading addr %p for status\n", done);
     while (*done != 0xff) {
 
     }
     measure_addr = (uint32_t *)(((unsigned long)mem_region) + CACHED_OFFSET);
 
     measurement = *measure_addr;
-    printf("Before cache read: %08x\n", le32toh(measurement));
+    fprintf(stderr, "Before cache read: %08x\n", le32toh(measurement));
     
     measurement = *(measure_addr + 1); 
-    printf("After cache read: %08x\n", le32toh(measurement));
+    fprintf(stderr, "After cache read: %08x\n", le32toh(measurement));
 
     measurement = *(measure_addr + 2); 
-    printf("Before uncache read: %08x\n", le32toh(measurement));
+    fprintf(stderr, "Before uncache read: %08x\n", le32toh(measurement));
 
     measurement = *(measure_addr + 3); 
-    printf("After uncache read: %08x\n", le32toh(measurement));
+    fprintf(stderr, "After uncache read: %08x\n", le32toh(measurement));
 }
 
 void read_results(uint32_t *mem_region) {
@@ -64,21 +64,21 @@ void read_results(uint32_t *mem_region) {
     uint32_t end_inst = le32toh(*(end + 5));
     uint32_t end_inst_hi = le32toh(*(end + 6));
 
-    printf("Start cycles: 0x%x\n", start_cycles);
-    printf("Start cycles high: 0x%x\n", start_cycles_hi);
-    printf("End cycles: 0x%x\n", end_cycles);
-    printf("End cycles high: 0x%x\n", end_cycles_hi);
+    fprintf(stderr, "Start cycles: 0x%x\n", start_cycles);
+    fprintf(stderr, "Start cycles high: 0x%x\n", start_cycles_hi);
+    fprintf(stderr, "End cycles: 0x%x\n", end_cycles);
+    fprintf(stderr, "End cycles high: 0x%x\n", end_cycles_hi);
 
-    printf("Start inst: 0x%x\n", start_inst);
-    printf("Start inst high: 0x%x\n", start_inst_hi);
-    printf("End inst: 0x%x\n", end_inst);
-    printf("End inst high: 0x%x\n", end_inst_hi);
+    fprintf(stderr, "Start inst: 0x%x\n", start_inst);
+    fprintf(stderr, "Start inst high: 0x%x\n", start_inst_hi);
+    fprintf(stderr, "End inst: 0x%x\n", end_inst);
+    fprintf(stderr, "End inst high: 0x%x\n", end_inst_hi);
 
     if (test_passed == 1) {
-        printf("Test passed\n");
+        fprintf(stderr, "Test passed\n");
     }
     else {
-        printf("Test failed\n");
+        fprintf(stderr, "Test failed\n");
     }
 }
 
@@ -101,9 +101,9 @@ int main(int argc, char *argv[]) {
     file_name = argv[1];
 
     // get a region of memory from the kernel
-    printf("Starting syscall to setup \n");
+    fprintf(stderr, "Starting syscall to setup \n");
     result = syscall(361, file_size);
-    printf("Got result %p\n", result);
+    fprintf(stderr, "Got result %p\n", result);
    
     // mmap /dev/mem so we can access the allocated memory
     fd = open("/dev/mem", O_RDWR);
@@ -113,23 +113,23 @@ int main(int argc, char *argv[]) {
     }
 
     mmap_start = (unsigned long)result;
-    printf("Start address %p\n", mmap_start);
+    fprintf(stderr, "Start address %p\n", mmap_start);
     mmapped = (uint32_t *)mmap(NULL, (unsigned long)(1024*PG_SIZE), PROT_READ|PROT_WRITE, MAP_SHARED, fd, mmap_start);
    
     if (mmapped == (uint32_t *)-1) {
         perror("Error");
     }
-    printf("mmap-ed address %p with size %lu\n", mmapped, (unsigned long)(1024*PG_SIZE));
+    fprintf(stderr, "mmap-ed address %p with size %lu\n", mmapped, (unsigned long)(1024*PG_SIZE));
 
 
     // get result
-    printf("Trying to read address %p\n", mmapped);
+    fprintf(stderr, "Trying to read address %p\n", mmapped);
     data_val = *((uint32_t *)(mmapped));
-    printf("Result %x\n", data_val);
+    fprintf(stderr, "Result %x\n", data_val);
 
     start_pc_offset = load_elf(file_name, mmapped);
     if (start_pc_offset == 0xffffffff) {
-        printf("Load error");
+        fprintf(stderr, "Load error");
         return 0;
     }
 
@@ -138,14 +138,14 @@ int main(int argc, char *argv[]) {
 
     // start pico
     start_pc = (uint32_t *)(((unsigned long)result) + start_pc_offset);
-    printf("Starting pico from address %x\n", start_pc);
+    fprintf(stderr, "Starting pico from address %x\n", start_pc);
     //printf("Reading back first instruction from %p: %x\n", mmapped, *((unsigned long)mmapped + start_pc));
     syscall(360, start_pc);
     //memory_test(mmapped);
     service_syscalls(mmapped);
     read_results(mmapped);
     //check_quicksort(mmapped);
-    printf("Exiting\n");
+    fprintf(stderr, "Exiting\n");
     
     return 0;
 }
